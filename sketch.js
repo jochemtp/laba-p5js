@@ -94,7 +94,7 @@ function draw() {
   pg.fill(255);
   pg.textSize(24);
   pg.textAlign(CENTER, CENTER);
-  pg.text("Press 'R' to form a new word", width / 2, 50);
+  pg.text("Press 'R' to change pages", width / 2, 50);
   image(pg, 0, 0); // Draw the buffer to the canvas
 
   for (let v of textPoints) {
@@ -106,7 +106,7 @@ function draw() {
 
 function keyPressed() {
   if (key === 'r' || key === 'R') {
-    word = random(["Hallo", "World", "p5.js", "Morph"]);
+    word = random(["Home", "Projects", "About us", "Contact"]);
     calculateTextPosition();
     setupWord(word);
   }
