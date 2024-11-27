@@ -4,7 +4,7 @@ let tposX; // X position of text (calculated dynamically)
 let tposY; // Y position of text (calculated dynamically)
 let pointCount = 0.1; // between 0 - 1 // point count
 
-let speed = 5; // speed of the particles
+let speed = 10; // speed of the particles
 let comebackSpeed = 120; // lower the number less interaction
 let dia = 120; // diameter of interaction
 let randomPos = false; // starting points
@@ -40,23 +40,49 @@ function calculateTextPosition() {
 }
 
 function setupWord(newWord) {
-  textPoints = [];
   let points = font.textToPoints(newWord, tposX, tposY, tSize, {
     sampleFactor: pointCount,
   });
 
-  for (let pt of points) {
-    let textPoint = new Interact(
-      pt.x,
-      pt.y,
-      speed,
-      dia,
-      randomPos,
-      comebackSpeed,
-      pointsDirection,
-      interactionDirection
-    );
-    textPoints.push(textPoint);
+  if (textPoints.length === 0) {
+    // First time setup
+    for (let pt of points) {
+      let textPoint = new Interact(
+        pt.x,
+        pt.y,
+        speed,
+        dia,
+        randomPos,
+        comebackSpeed,
+        pointsDirection,
+        interactionDirection
+      );
+      textPoints.push(textPoint);
+    }
+  } else {
+    // Morph existing points to new word
+    for (let i = 0; i < points.length; i++) {
+      if (i < textPoints.length) {
+        textPoints[i].setTarget(points[i].x, points[i].y);
+      } else {
+        let textPoint = new Interact(
+          points[i].x,
+          points[i].y,
+          speed,
+          dia,
+          randomPos,
+          comebackSpeed,
+          pointsDirection,
+          interactionDirection
+        );
+        textPoints.push(textPoint);
+      }
+    }
+
+    // Remove extra particles
+    if (points.length < textPoints.length) {
+      textPoints.splice(points.length);
+    }
   }
 }
 
@@ -72,74 +98,52 @@ function draw() {
   image(pg, 0, 0); // Draw the buffer to the canvas
 
   for (let v of textPoints) {
-    v.behaviors();
     v.update();
     v.show();
+    v.behaviors();
   }
 }
 
-function mousePressed() {
-  scattered = !scattered; // Toggle scatter state
-  for (let v of textPoints) {
-    v.toggleScatter(scattered);
+function keyPressed() {
+  if (key === 'r' || key === 'R') {
+    word = random(["Hallo", "World", "p5.js", "Morph"]);
+    calculateTextPosition();
+    setupWord(word);
   }
 }
 
-// Interact class to manage particles
+// Particle class
 class Interact {
   constructor(x, y, speed, dia, randomPos, comebackSpeed, pointsDirection, interactionDirection) {
-    this.home = createVector(x, y);
-    this.pos = randomPos
-      ? createVector(random(width), random(height))
-      : this.home.copy();
-    this.vel = createVector(0, 0);
-    this.acc = createVector(0, 0);
+    this.x = randomPos ? random(width) : x;
+    this.y = randomPos ? random(height) : y;
+    this.targetX = x;
+    this.targetY = y;
     this.speed = speed;
     this.dia = dia;
-    this.scattered = false;
     this.comebackSpeed = comebackSpeed;
+    this.pointsDirection = pointsDirection;
+    this.interactionDirection = interactionDirection;
   }
 
-  applyForce(force) {
-    this.acc.add(force);
-  }
-
-  behaviors() {
-    let mouse = createVector(mouseX, mouseY);
-    let d = p5.Vector.dist(this.pos, mouse);
-
-    if (d < this.dia) {
-      // Repel behavior
-      let repel = p5.Vector.sub(this.pos, mouse);
-      repel.setMag(map(d, 0, this.dia, this.speed, 0));
-      this.applyForce(repel);
-    }
-
-    if (!this.scattered) {
-      // Attract behavior back to home position
-      let homeForce = p5.Vector.sub(this.home, this.pos);
-      homeForce.setMag(1 / this.comebackSpeed);
-      this.applyForce(homeForce);
-    }
-  }
-
-  toggleScatter(state) {
-    this.scattered = state;
-    if (state) {
-      this.vel = p5.Vector.random2D().mult(this.speed);
-    }
+  setTarget(x, y) {
+    this.targetX = x;
+    this.targetY = y;
   }
 
   update() {
-    this.vel.add(this.acc);
-    this.vel.limit(this.speed);
-    this.pos.add(this.vel);
-    this.acc.mult(0); // Reset acceleration
+    // Move towards target
+    this.x = lerp(this.x, this.targetX, 0.1);
+    this.y = lerp(this.y, this.targetY, 0.1);
   }
 
   show() {
     fill(255);
     noStroke();
-    ellipse(this.pos.x, this.pos.y, 4, 4);
+    ellipse(this.x, this.y, 5, 5);
+  }
+
+  behaviors() {
+    // Implement interaction behaviors if needed
   }
 }
