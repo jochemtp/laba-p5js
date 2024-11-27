@@ -12,7 +12,7 @@ let pointsDirection = "general"; // left right up down general
 let interactionDirection = -1; // -1 and 1
 
 let textPoints = [];
-let word = "Hallo";
+let word = "Hello";
 let scattered = false; // Track if particles are scattered
 
 let pg; // PGraphics object for sharp text
