@@ -72,106 +72,74 @@ function draw() {
   image(pg, 0, 0); // Draw the buffer to the canvas
 
   for (let v of textPoints) {
+    v.behaviors();
     v.update();
     v.show();
-    v.behaviors();
   }
 }
 
 function mousePressed() {
   scattered = !scattered; // Toggle scatter state
   for (let v of textPoints) {
-    v.toggleScatter(scattered); // Scatter or reset based on state
+    v.toggleScatter(scattered);
   }
 }
 
-function keyPressed() {
-  if (key === "R" || key === "r") {
-    word = random(["Hello", "World", "Art", "Code", "P5js"]); // Random words
-    calculateTextPosition(); // Recalculate positions for new word
-    setupWord(word); // Create new points for the new word
+// Interact class to manage particles
+class Interact {
+  constructor(x, y, speed, dia, randomPos, comebackSpeed, pointsDirection, interactionDirection) {
+    this.home = createVector(x, y);
+    this.pos = randomPos
+      ? createVector(random(width), random(height))
+      : this.home.copy();
+    this.vel = createVector(0, 0);
+    this.acc = createVector(0, 0);
+    this.speed = speed;
+    this.dia = dia;
+    this.scattered = false;
+    this.comebackSpeed = comebackSpeed;
+  }
+
+  applyForce(force) {
+    this.acc.add(force);
+  }
+
+  behaviors() {
+    let mouse = createVector(mouseX, mouseY);
+    let d = p5.Vector.dist(this.pos, mouse);
+
+    if (d < this.dia) {
+      // Repel behavior
+      let repel = p5.Vector.sub(this.pos, mouse);
+      repel.setMag(map(d, 0, this.dia, this.speed, 0));
+      this.applyForce(repel);
+    }
+
+    if (!this.scattered) {
+      // Attract behavior back to home position
+      let homeForce = p5.Vector.sub(this.home, this.pos);
+      homeForce.setMag(1 / this.comebackSpeed);
+      this.applyForce(homeForce);
+    }
+  }
+
+  toggleScatter(state) {
+    this.scattered = state;
+    if (state) {
+      this.vel = p5.Vector.random2D().mult(this.speed);
+    }
+  }
+
+  update() {
+    this.vel.add(this.acc);
+    this.vel.limit(this.speed);
+    this.pos.add(this.vel);
+    this.acc.mult(0); // Reset acceleration
+  }
+
+  show() {
+    fill(255);
+    noStroke();
+    ellipse(this.pos.x, this.pos.y, 4, 4);
   }
 }
-
-function windowResized() {
-  resizeCanvas(windowWidth, windowHeight);
-  calculateTextPosition(); // Recalculate positions for resized window
-  setupWord(word); // Recreate the text points
-}
-
-// Interact class and methods
-function Interact(x, y, m, d, t, s, di, p) {
-  this.home = createVector(x, y);
-  this.pos = t ? createVector(random(width), random(height)) : this.home.copy();
-  this.target = this.home.copy();
-  this.vel = createVector();
-  this.acc = createVector();
-  this.r = 8;
-  this.maxSpeed = m;
-  this.maxforce = 1;
-  this.dia = d;
-  this.come = s;
-  this.dir = p;
-  this.scattered = false;
-}
-
-Interact.prototype.toggleScatter = function (scattered) {
-  this.scattered = scattered;
-  if (scattered) {
-    this.target = createVector(random(width), random(height)); // Scatter target
-  } else {
-    this.target = this.home; // Return to home position
-  }
-};
-
-Interact.prototype.behaviors = function () {
-  let arrive = this.arrive(this.target);
-  let mouse = createVector(mouseX, mouseY);
-  let flee = this.flee(mouse);
-
-  this.applyForce(arrive);
-  this.applyForce(flee);
-};
-
-Interact.prototype.applyForce = function (f) {
-  this.acc.add(f);
-};
-
-Interact.prototype.arrive = function (target) {
-  let desired = p5.Vector.sub(target, this.pos);
-  let d = desired.mag();
-  let speed = this.maxSpeed;
-  if (d < this.come) {
-    speed = map(d, 0, this.come, 0, this.maxSpeed);
-  }
-  desired.setMag(speed);
-  let steer = p5.Vector.sub(desired, this.vel);
-  return steer;
-};
-
-Interact.prototype.flee = function (target) {
-  let desired = p5.Vector.sub(target, this.pos);
-  let d = desired.mag();
-
-  if (d < this.dia) {
-    desired.setMag(this.maxSpeed);
-    desired.mult(this.dir);
-    let steer = p5.Vector.sub(desired, this.vel);
-    steer.limit(this.maxForce);
-    return steer;
-  } else {
-    return createVector(0, 0);
-  }
-};
-
-Interact.prototype.update = function () {
-  this.pos.add(this.vel);
-  this.vel.add(this.acc);
-  this.acc.mult(0);
-};
-
-Interact.prototype.show = function () {
-  stroke(255);
-  strokeWeight(4);
-  point(this.pos.x, this.pos.y);
-};
