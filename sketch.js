@@ -1,8 +1,8 @@
 let font;
-let tSize = 100; // Text Size
+let tSize = 90; // Text Size
 let tposX; // X position of text (calculated dynamically)
 let tposY; // Y position of text (calculated dynamically)
-let pointCount = 0.1; // between 0 - 1 // point count
+let pointCount = 0.4; // between 0 - 1 // point count
 
 let speed = 10; // speed of the particles
 let comebackSpeed = 120; // lower the number less interaction
@@ -10,6 +10,8 @@ let dia = 120; // diameter of interaction
 let randomPos = false; // starting points
 let pointsDirection = "general"; // left right up down general
 let interactionDirection = -1; // -1 and 1
+
+let sound;
 
 let textPoints = [];
 let word = "Hello";
@@ -19,6 +21,7 @@ let pg; // PGraphics object for sharp text
 
 function preload() {
   font = loadFont("AvenirNextLTPro-Demi.otf");
+  sound = loadSound('swoosh.mp3');
 }
 
 function setup() {
@@ -106,9 +109,19 @@ function draw() {
 
 function keyPressed() {
   if (key === 'r' || key === 'R') {
+    // Kies een willekeurig woord
     word = random(["Home", "Projects", "About us", "Contact"]);
     calculateTextPosition();
     setupWord(word);
+    
+    // Zet de afspeelsnelheid op 1.1x
+    sound.rate(1.1);
+
+    // Speel het geluid af
+    if (sound.isPlaying()) {
+      sound.stop(); // Stop als het al speelt
+    }
+    sound.play(); // Speel het geluid af
   }
 }
 
